@@ -1,26 +1,49 @@
-import { RequestQueue, CheerioCrawler } from "crawlee";
+import { RequestQueue, JSDOMCrawler, Dataset } from "crawlee";
+import { Readability } from "@mozilla/readability";
+import DOMPurify from 'dompurify';
+import { saveToDB } from "./save";
 
-let visited = [];
+let counter = 0;
 
 const requestQueue = await RequestQueue.open();
 await requestQueue.addRequest({ url: "https://www.businesswire.com/portal/site/home/news/" });
 
-const crawler = new CheerioCrawler({
+const crawler = new JSDOMCrawler({
     requestQueue,
-    async requestHandler({ $, request }) {
-        $(".bwTitleLink").each(function (i, elem) {
+    async requestHandler({ request, window }) {
+        let document = window.document;
+        let not_visited = [];
 
-            let headline = $(this).text();
-            let article_url = $(this).attr("href");
+        if (document.querySelector("h1").textContent == "All News") {
+            // Scraping news homepage again
+            console.log("Scraping: " + document.querySelector("h1").textContent.substring(0, 90));
 
-            if (!visited.includes(headline)) {
-                console.log("New Article not visited yet:");
-                console.log(headline);
-                visited.push(headline);
-            }
-        });
-        // Recrawl the page checking for new articles
-        await crawler.addRequests(["https://www.businesswire.com/portal/site/home/news/"]);
+            // Select all Links from listed articles
+            document.querySelectorAll(".bwTitleLink").forEach((elem) => {
+                let article_url = elem.getAttribute("href");
+                not_visited.push({url: "https://www.businesswire.com" + article_url});
+            });
+
+            // Visit news homepage again, adding a unique key so we avoid duplicate request mechanism
+            await new Promise(r => setTimeout(r, 10000));
+            counter++;
+            not_visited.push({url: "https://www.businesswire.com/portal/site/home/news/", uniqueKey: counter.toString()});
+        }
+        else {
+            let headline = document.querySelector("h1").textContent;
+            console.log("Scraping: " + headline.substring(0, 90));
+
+            // Scrape article page, strip with mozilla read view and purify against xss attacks
+            let article = new Readability(document).parse().content;
+            const purify = DOMPurify(window);
+            const cleaned_article = purify.sanitize(article);
+            
+            // Save to database
+            await saveToDB(headline, request.url, cleaned_article);
+        }
+
+        await crawler.addRequests(not_visited);
+        
     }
 })
 
