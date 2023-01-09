@@ -1,18 +1,18 @@
 {
-    "name": "urza_crawler",
-    "version": "0.0.1",
-    "type": "module",
-    "description": "This is an example of a Crawlee project.",
-    "dependencies": {
-        "@mozilla/readability": "^0.4.2",
-        "crawlee": "^3.0.0",
-        "dompurify": "^2.4.3",
-        "pg": "^8.8.0"
-    },
-    "scripts": {
-        "start": "node src/main.js",
-        "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1"
-    },
-    "author": "It's not you it's me",
-    "license": "ISC"
+  "name": "urza_crawler",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "",
+  "dependencies": {
+    "@mozilla/readability": "^0.4.2",
+    "crawlee": "^3.0.0",
+    "dompurify": "^2.4.3",
+    "pg": "^8.8.0"
+  },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": ""
+  },
+  "author": "Jaanis Fehling",
+  "license": "MIT"
 }
