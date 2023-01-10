@@ -1,10 +1,10 @@
 import * as fs from "fs";
-import {Client} from "pg";
+import pg from 'pg'
 
 export async function establishDBConnection() {
     let settings = JSON.parse(fs.readFileSync("../settings.json", "utf8"));
 
-    const client = new Client({
+    const client = new pg.Client({
         host: settings.db.host,
         port: settings.db.port,
         user: settings.db.user,
@@ -29,7 +29,7 @@ export async function saveToDB(client, url, headline, datetime, html) {
     }
 }
 
-export async function URLExistsInDB(client, url) {
+export async function urlExistsInDB(client, url) {
     const query = "SELECT URL FROM article WHERE URL='${url}'"
     try {
         const res = await client.query(query);
