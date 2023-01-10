@@ -1,3 +1,5 @@
-import {businessWireCrawler} from './businessWire.js'
+import {startBusinessWireCrawler} from './businessWire.js'
+import {establishDBConnection} from "./db_adapter.js";
 
-await businessWireCrawler.run();
+const client = establishDBConnection();
+await startBusinessWireCrawler(client);

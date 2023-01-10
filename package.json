@@ -7,12 +7,15 @@
     "@mozilla/readability": "^0.4.2",
     "crawlee": "^3.0.0",
     "dompurify": "^2.4.3",
-    "pg": "^8.8.0"
+    "pg": "8.2.x"
   },
   "scripts": {
     "start": "node src/main.js",
     "test": ""
   },
   "author": "Jaanis Fehling",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.11.18"
+  }
 }
