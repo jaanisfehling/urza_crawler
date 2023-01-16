@@ -1,4 +1,4 @@
-import {RequestQueue, JSDOMCrawler} from "crawlee";
+import {JSDOMCrawler} from "crawlee";
 import {business_wire} from "./business_wire.js";
 
 export async function startCrawler(client, businessWire = true, globeNewswire = false) {
@@ -17,10 +17,10 @@ export async function startCrawler(client, businessWire = true, globeNewswire = 
 
     let startURLs = [];
     if (businessWire) {
-        startURLs.push(["https://www.businesswire.com/portal/site/home/news/"]);
+        startURLs.push("https://www.businesswire.com/portal/site/home/news/");
     }
     if (globeNewswire) {
-        startURLs.push(["https://www.globenewswire.com/search/?pageSize=50"]);
+        startURLs.push("https://www.globenewswire.com/search/?pageSize=50");
     }
     await crawler.run(startURLs);
 }
