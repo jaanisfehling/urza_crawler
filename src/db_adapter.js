@@ -1,9 +1,9 @@
 import * as fs from "fs";
-import pg from 'pg'
+import pg from "pg"
 import {log} from "crawlee";
 
 export async function establishDBConnection() {
-    let settings = JSON.parse(fs.readFileSync("../settings.json", "utf8"));
+    let settings = JSON.parse(fs.readFileSync("./settings.json", "utf8"));
 
     try {
         const client = new pg.Client({

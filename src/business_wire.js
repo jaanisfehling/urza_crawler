@@ -1,7 +1,7 @@
-import {handleArticle} from "./event_controller.js";
+import {handleArticle} from "./article_handler.js";
 import {log} from "crawlee";
 
-export async function business_wire(request, window, client, uniqueKeyCounter) {
+export async function businessWire(request, window, dbClient, uniqueKeyCounter) {
     let document = window.document;
     let notVisited = [];
 
@@ -25,9 +25,9 @@ export async function business_wire(request, window, client, uniqueKeyCounter) {
         const headline = document.querySelector("h1").textContent;
         log.info("Business Wire Crawler scraping: " + headline.substring(0, 90));
         const datetime = document.querySelector("time").getAttribute("datetime").replace('T', ' ').replace('Z', '') + "-05";
-        
+
         // Save to database
-        await handleArticle(client, headline, datetime, request.url, window);
+        await handleArticle(dbClient, headline, datetime, request.url, window);
     }
     return notVisited;
 }
