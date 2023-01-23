@@ -1,51 +1,25 @@
-import * as fs from "fs";
-import pg from "pg"
 import {log} from "crawlee";
-
-export async function establishDBConnection() {
-    let settings = JSON.parse(fs.readFileSync("./settings.json", "utf8"));
-
-    try {
-        const client = new pg.Client({
-            host: settings.db.host,
-            port: settings.db.port,
-            user: settings.db.user,
-            password: settings.db.password,
-        });
-        await client.connect();
-        return client;
-    } catch (e) {
-        log.exception(e, "Cannot establish connection.");
-    }
-}
-
-export async function closeDBConnection(client) {
-    try {
-        await client.end();
-    } catch (e) {
-        log.exception(e, "Cannot close connection.");
-    }
-}
 
 export async function saveToDB(client, url, headline, datetime, html) {
     const text = "INSERT INTO article VALUES($1, $2, $3, $4) RETURNING *"
     const values = [url, headline, datetime, html]
 
     try {
-        return await client.query(text, values);
+        const res = await client.query(text, values);
+        return res;
     } catch (e) {
         log.exception(e, "Cannot save to database.");
     }
 }
 
 export async function urlExistsInDB(client, url) {
-    const query = "SELECT URL FROM article WHERE URL='${url}'"
+    const query = "SELECT URL FROM article WHERE URL=$1"
     try {
-        const res = await client.query(query);
-        if (res.rows[0].equals(url)) {
-            return true;
-        } else {
+        const res = await client.query(query, [url]);
+        if (res.rowCount === 0) {
             return false;
+        } else {
+            return true;
         }
     } catch (e) {
         log.exception(e, "Cannot query database.");

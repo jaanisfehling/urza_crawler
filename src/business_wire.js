@@ -27,7 +27,7 @@ export async function businessWire(request, window, dbClient, uniqueKeyCounter) 
         const datetime = document.querySelector("time").getAttribute("datetime").replace('T', ' ').replace('Z', '') + "-05";
 
         // Save to database
-        await handleArticle(dbClient, headline, datetime, request.url, window);
+        await handleArticle(dbClient, request.url, headline, datetime, window);
     }
     return notVisited;
 }
