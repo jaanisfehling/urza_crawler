@@ -12,7 +12,8 @@ export async function startCrawler(client, business_wire = true, globe_newswire 
             if (business_wire) {
                 notVisited = notVisited.concat(await businessWire(request, window, client, uniqueKeyCounter));
             }
-            await crawler.addRequests(notVisited);
+            await new Promise(r => setTimeout(r, 10000));
+            await crawler.addRequests(notVisited);add
         }
     });
 

@@ -16,7 +16,6 @@ export async function businessWire(request, window, dbClient, uniqueKeyCounter) 
         });
 
         // Visit news homepage again, adding a unique key so we avoid duplicate request mechanism
-        await new Promise(r => setTimeout(r, 10000));
         notVisited.push({
             url: "https://www.businesswire.com/portal/site/home/news/",
             uniqueKey: uniqueKeyCounter.toString()
