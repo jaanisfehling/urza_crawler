@@ -1,9 +1,5 @@
-# This file tells Git which files shouldn't be added to source control
+# Ignore Gradle project-specific cache directory
+.gradle
 
-.idea
-dist
-node_modules
-apify_storage
-crawlee_storage
-storage
-settings.json
+# Ignore Gradle build output directory
+build
