@@ -25,16 +25,12 @@ public class Client extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         System.out.println("Received message: " + message);
+
         Gson gson = new Gson();
         CrawlTask[] crawlTasks = gson.fromJson(message, CrawlTask[].class);
 
         for (CrawlTask task : crawlTasks) {
-            CrawlResult result = task.crawl();
-            if (result != null) {
-                // Send scraped result to Pipeline
-                String json = gson.toJson(result);
-                Main.pipelineClient.send(json);
-            }
+            Main.pool.execute(task);
         }
     }
 

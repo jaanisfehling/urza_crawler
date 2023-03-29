@@ -9,12 +9,12 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.time.Instant;
 
-public class CrawlTask {
+public class CrawlTask implements Runnable {
     public String listViewUrl;
     public String articleSelector;
     public String mostRecentArticleUrl;
 
-    public CrawlResult crawl() {
+    public void run() {
 
         // Scrape List View URL
         Document listViewDoc = null;
@@ -22,7 +22,7 @@ public class CrawlTask {
             listViewDoc = Jsoup.connect(listViewUrl).get();
         } catch (IOException e) {
             System.out.println("Error fetching " + listViewUrl);
-            return null;
+            return;
         }
 
         // Get the Name of the List View Site
@@ -36,7 +36,7 @@ public class CrawlTask {
 
             // If headline was already scraped, we can quit since all other headlines are older
             if (headlineUrl.equals(mostRecentArticleUrl)) {
-                return null;
+                return;
             }
 
             // If this is a new Headline
@@ -48,15 +48,19 @@ public class CrawlTask {
                     // Create Crawl Result
                     Instant dateTime = Instant.now();
                     String htmlContent = articleDoc.select("*").html();
-                    return new CrawlResult(headlineUrl, siteName, dateTime, htmlContent);
+                    CrawlResult result = new CrawlResult(headlineUrl, siteName, dateTime, htmlContent);
+
+                    // Send scraped result to Pipeline
+                    Gson gson = new Gson();
+                    String json = gson.toJson(result);
+                    Main.pipelineClient.send(json);
 
                 } catch (IOException e) {
                     System.out.println("Error fetching " + headlineUrl);
-                    return null;
+                    return;
                 }
             }
         }
-        return null;
     }
 
     @Override
