@@ -15,6 +15,7 @@ public class Client extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         System.out.println("New connection opened");
+        send("");
     }
 
     @Override
@@ -32,6 +33,7 @@ public class Client extends WebSocketClient {
         for (CrawlTask task : crawlTasks) {
             Main.pool.execute(task);
         }
+        send("");
     }
 
     @Override
