@@ -9,13 +9,15 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.time.Instant;
 
+import static urza_crawler.UrlUtils.getAbsoluteUrl;
+import static urza_crawler.UrlUtils.getBaseUrl;
+
 public class CrawlTask implements Runnable {
     public String listViewUrl;
     public String articleSelector;
     public String mostRecentArticleUrl;
 
     public void run() {
-
         // Scrape List View URL
         Document listViewDoc = null;
         try {
@@ -32,7 +34,7 @@ public class CrawlTask implements Runnable {
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
         for (Element headline : headlines) {
-            String headlineUrl = headline.attr("href");
+            String headlineUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
 
             // If headline was already scraped, we can quit since all other headlines are older
             if (headlineUrl.equals(mostRecentArticleUrl)) {
