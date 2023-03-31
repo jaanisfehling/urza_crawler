@@ -1,12 +1,13 @@
 package urza_crawler;
 
-import com.google.gson.Gson;
+import com.google.gson.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.time.Instant;
 
 import static urza_crawler.UrlUtils.getAbsoluteUrl;
@@ -16,6 +17,13 @@ public class CrawlTask implements Runnable {
     public String listViewUrl;
     public String articleSelector;
     public String mostRecentArticleUrl;
+
+    private static class InstantSerializer implements JsonSerializer<Instant> {
+        @Override
+        public JsonElement serialize(Instant src, Type srcType, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
+    }
 
     public void run() {
         // Scrape List View URL
@@ -48,12 +56,13 @@ public class CrawlTask implements Runnable {
                     articleDoc = Jsoup.connect(headlineUrl).get();
 
                     // Create Crawl Result
-                    Instant dateTime = Instant.now();
                     String htmlContent = articleDoc.select("*").html();
-                    CrawlResult result = new CrawlResult(headlineUrl, siteName, dateTime, htmlContent);
+                    CrawlResult result = new CrawlResult(headlineUrl, siteName, htmlContent, listViewUrl);
 
                     // Send scraped result to Pipeline
-                    Gson gson = new Gson();
+                    GsonBuilder builder = new GsonBuilder();
+                    builder.registerTypeAdapter(Instant.class, new InstantSerializer());
+                    Gson gson = builder.create();
                     String json = gson.toJson(result);
                     Main.pipelineClient.send(json);
 
