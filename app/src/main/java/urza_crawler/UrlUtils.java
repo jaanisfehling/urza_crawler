@@ -16,8 +16,12 @@ public class UrlUtils {
     }
 
     public static String getAbsoluteUrl(String baseUrl, String relativeUrl) {
-        int overlap = 0;
-        for (int i=0; i<Math.min(baseUrl.length(), relativeUrl.length()); i++) {
+        for (int i = 0; i < baseUrl.length(); i++) {
+            String baseUrlSubstring = baseUrl.substring(i);
+            if (relativeUrl.contains(baseUrlSubstring)) {
+                return baseUrl.substring(0, i) + relativeUrl;
+            }
         }
+        return baseUrl + relativeUrl;
     }
 }
