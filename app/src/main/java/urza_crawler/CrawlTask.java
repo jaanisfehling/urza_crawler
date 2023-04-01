@@ -22,7 +22,7 @@ public class CrawlTask implements Runnable {
     public String articleSelector;
     public String mostRecentArticleUrl;
 
-    void updateCrawlTask() {
+    void updateCrawlTarget() {
         String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword");) {
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -61,7 +61,7 @@ public class CrawlTask implements Runnable {
 
                 // Update the most recent article in the database
                 mostRecentArticleUrl = articleUrl;
-                updateCrawlTask();
+                updateCrawlTarget();
 
                 Document articleDoc = null;
                 try {
@@ -69,12 +69,13 @@ public class CrawlTask implements Runnable {
 
                     // Create Crawl Result
                     String htmlContent = articleDoc.select("*").html();
-                    CrawlResult result = new CrawlResult(articleUrl, siteName, htmlContent, listViewUrl);
+                    CrawlResult result = new CrawlResult(articleUrl, siteName, htmlContent);
 
                     // Send scraped result to Pipeline
-                    GsonBuilder builder = new GsonBuilder();
-                    builder.registerTypeAdapter(Instant.class, new InstantSerializer());
-                    Gson gson = builder.create();
+//                    GsonBuilder builder = new GsonBuilder();
+//                    builder.registerTypeAdapter(Instant.class, new InstantSerializer());
+//                    Gson gson = builder.create();
+                    Gson gson = new Gson();
                     String json = gson.toJson(result);
                     Main.pipelineClient.send(json);
 
