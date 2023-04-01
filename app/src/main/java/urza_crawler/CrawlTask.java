@@ -58,11 +58,7 @@ public class CrawlTask implements Runnable {
 
             // If headline was already scraped, we can quit since all other headlines are older
             if (!articleUrl.equals(mostRecentArticleUrl)) {
-
-                // Update the most recent article in the database
                 mostRecentArticleUrl = articleUrl;
-                updateCrawlTarget();
-
                 Document articleDoc = null;
                 try {
                     articleDoc = Jsoup.connect(articleUrl).get();
@@ -85,6 +81,7 @@ public class CrawlTask implements Runnable {
                 }
             }
         }
+        updateCrawlTarget();
     }
 
     @Override
