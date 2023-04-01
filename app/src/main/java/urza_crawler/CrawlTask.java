@@ -8,6 +8,10 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Instant;
 
 import static urza_crawler.UrlUtils.getAbsoluteUrl;
@@ -18,10 +22,18 @@ public class CrawlTask implements Runnable {
     public String articleSelector;
     public String mostRecentArticleUrl;
 
-    private static class InstantSerializer implements JsonSerializer<Instant> {
-        @Override
-        public JsonElement serialize(Instant src, Type srcType, JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString());
+    void updateCrawlTask() {
+        String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword");) {
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, mostRecentArticleUrl);
+                stmt.setString(2, listViewUrl);
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -42,22 +54,22 @@ public class CrawlTask implements Runnable {
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
         for (Element headline : headlines) {
-            String headlineUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
+            String articleUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
 
             // If headline was already scraped, we can quit since all other headlines are older
-            if (headlineUrl.equals(mostRecentArticleUrl)) {
-                return;
-            }
+            if (!articleUrl.equals(mostRecentArticleUrl)) {
 
-            // If this is a new Headline
-            else {
+                // Update the most recent article in the database
+                mostRecentArticleUrl = articleUrl;
+                updateCrawlTask();
+
                 Document articleDoc = null;
                 try {
-                    articleDoc = Jsoup.connect(headlineUrl).get();
+                    articleDoc = Jsoup.connect(articleUrl).get();
 
                     // Create Crawl Result
                     String htmlContent = articleDoc.select("*").html();
-                    CrawlResult result = new CrawlResult(headlineUrl, siteName, htmlContent, listViewUrl);
+                    CrawlResult result = new CrawlResult(articleUrl, siteName, htmlContent, listViewUrl);
 
                     // Send scraped result to Pipeline
                     GsonBuilder builder = new GsonBuilder();
@@ -67,7 +79,7 @@ public class CrawlTask implements Runnable {
                     Main.pipelineClient.send(json);
 
                 } catch (IOException e) {
-                    System.out.println("Error fetching " + headlineUrl);
+                    System.out.println("Error fetching " + articleUrl);
                     return;
                 }
             }
@@ -77,5 +89,12 @@ public class CrawlTask implements Runnable {
     @Override
     public String toString() {
         return listViewUrl;
+    }
+
+    private static class InstantSerializer implements JsonSerializer<Instant> {
+        @Override
+        public JsonElement serialize(Instant src, Type srcType, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
     }
 }
