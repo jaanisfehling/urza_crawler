@@ -53,12 +53,20 @@ public class CrawlTask implements Runnable {
 
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
+        boolean isFirstArticle = true;
         for (Element headline : headlines) {
             String articleUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
+            System.out.println(articleUrl);
 
-            // If headline was already scraped, we can quit since all other headlines are older
-            if (!articleUrl.equals(mostRecentArticleUrl)) {
-                mostRecentArticleUrl = articleUrl;
+            if (articleUrl.equals(mostRecentArticleUrl)) {
+                return;
+            }
+            else {
+                if (isFirstArticle) {
+                    mostRecentArticleUrl = articleUrl;
+                    updateCrawlTarget();
+                    isFirstArticle = false;
+                }
                 Document articleDoc = null;
                 try {
                     articleDoc = Jsoup.connect(articleUrl).get();
@@ -81,7 +89,6 @@ public class CrawlTask implements Runnable {
                 }
             }
         }
-        updateCrawlTarget();
     }
 
     @Override
