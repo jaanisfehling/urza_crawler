@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static ExecutorService pool = Executors.newFixedThreadPool(24);
+    public static ExecutorService pool = Executors.newFixedThreadPool(4);
     public static WebSocketClient pipelineClient;
     public static WebSocketClient queueClient;
 

@@ -24,7 +24,7 @@ public class CrawlTask implements Runnable {
 
     void updateCrawlTarget() {
         String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword");) {
+        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword")) {
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, mostRecentArticleUrl);
                 stmt.setString(2, listViewUrl);
@@ -56,9 +56,8 @@ public class CrawlTask implements Runnable {
         boolean isFirstArticle = true;
         for (Element headline : headlines) {
             String articleUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
-            System.out.println(articleUrl);
 
-            if (articleUrl.equals(mostRecentArticleUrl)) {
+            if (articleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
                 return;
             }
             else {
