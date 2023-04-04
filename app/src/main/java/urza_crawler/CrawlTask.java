@@ -13,16 +13,17 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.concurrent.Callable;
 
 import static urza_crawler.UrlUtils.getAbsoluteUrl;
 import static urza_crawler.UrlUtils.getBaseUrl;
 
-public class CrawlTask implements Runnable {
+public class CrawlTask implements Callable<Boolean> {
     public String listViewUrl;
     public String articleSelector;
     public String mostRecentArticleUrl;
 
-    void updateCrawlTarget() {
+    private void updateMostRecentArticleUrl() {
         String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword")) {
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -37,15 +38,19 @@ public class CrawlTask implements Runnable {
         }
     }
 
-    public void run() {
-        // Scrape List View URL
-        Document listViewDoc = null;
+    private Document request(String url) {
         try {
-            listViewDoc = Jsoup.connect(listViewUrl).get();
+            return Jsoup.connect(url).get();
         } catch (IOException e) {
-            System.out.println("Error fetching " + listViewUrl);
-            return;
+            System.out.println("Error fetching " + url);
+            return null;
         }
+    }
+
+    @Override
+    public Boolean call() {
+        Document listViewDoc = request(listViewUrl);
+
 
         // Get the Name of the List View Site
         Element title = listViewDoc.select("title").first();
@@ -58,47 +63,32 @@ public class CrawlTask implements Runnable {
             String articleUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
 
             if (articleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
-                return;
+                return true;
             }
             else {
                 if (isFirstArticle) {
                     mostRecentArticleUrl = articleUrl;
-                    updateCrawlTarget();
+                    updateMostRecentArticleUrl();
                     isFirstArticle = false;
                 }
                 Document articleDoc = null;
-                try {
-                    articleDoc = Jsoup.connect(articleUrl).get();
+                articleDoc = request(articleUrl);
 
-                    // Create Crawl Result
-                    String htmlContent = articleDoc.select("*").html();
-                    CrawlResult result = new CrawlResult(articleUrl, siteName, htmlContent);
+                // Create Crawl Result
+                String htmlContent = articleDoc.select("*").html();
+                CrawlResult result = new CrawlResult(articleUrl, siteName, htmlContent);
 
-                    // Send scraped result to Pipeline
-//                    GsonBuilder builder = new GsonBuilder();
-//                    builder.registerTypeAdapter(Instant.class, new InstantSerializer());
-//                    Gson gson = builder.create();
-                    Gson gson = new Gson();
-                    String json = gson.toJson(result);
-                    Main.pipelineClient.send(json);
-
-                } catch (IOException e) {
-                    System.out.println("Error fetching " + articleUrl);
-                    return;
-                }
+                // Send scraped result to Pipeline
+                Gson gson = new Gson();
+                String json = gson.toJson(result);
+                Main.pipelineClient.send(json);
             }
         }
+        return true;
     }
 
     @Override
     public String toString() {
         return listViewUrl;
-    }
-
-    private static class InstantSerializer implements JsonSerializer<Instant> {
-        @Override
-        public JsonElement serialize(Instant src, Type srcType, JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString());
-        }
     }
 }

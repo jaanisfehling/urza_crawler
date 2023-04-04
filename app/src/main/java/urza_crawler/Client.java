@@ -1,6 +1,11 @@
 package urza_crawler;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
@@ -28,10 +33,12 @@ public class Client extends WebSocketClient {
         System.out.println("Received message: " + message);
 
         Gson gson = new Gson();
-        CrawlTask[] crawlTasks = gson.fromJson(message, CrawlTask[].class);
+        List<Callable<Boolean>> crawlTasks = Arrays.asList(gson.fromJson(message, CrawlTask[].class));
 
-        for (CrawlTask task : crawlTasks) {
-            Main.pool.execute(task);
+        try {
+            List<Future<Boolean>> futures = Main.pool.invokeAll(crawlTasks);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         send("");
     }
