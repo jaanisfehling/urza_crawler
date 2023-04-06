@@ -12,6 +12,7 @@ The Webcrawler uses a fixed size thread pool. This will be set in production to 
 a perfect thread pool size for the provided docker enviroment.
 Read this:
 https://mucahit.io/2020/01/27/finding-ideal-jvm-thread-pool-size-with-kubernetes-and-docker/
+
 Brian Goetz magic formula:
 Number of Threads = Number of Available CPU Cores * Target CPU Utilization * (1 + Wait Time / Compute Time)
 
