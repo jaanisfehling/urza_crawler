@@ -7,7 +7,6 @@ Tasks are due, send them to the Crawler. The Crawler will crawl through the list
 site and look for new articles. If there are, it will send them to the pipeline.
 
 After being done with all Tasks, the Crawler will notify the Queue again.
-(Possible Error on Crawler Crash!!!, WIP)
 
 The Webcrawler uses a fixed size thread pool. This will be set in production to match
 a perfect thread pool size for the provided docker enviroment:
