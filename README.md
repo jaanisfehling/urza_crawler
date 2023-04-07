@@ -14,7 +14,7 @@ Read this:
 https://mucahit.io/2020/01/27/finding-ideal-jvm-thread-pool-size-with-kubernetes-and-docker/
 
 Brian Goetz magic formula:
-Number of Threads = Number of Available CPU Cores * Target CPU Utilization * (1 + Wait Time / Compute Time)
+`Number of Threads = Number of Available CPU Cores * Target CPU Utilization * (1 + Wait Time / Compute Time)`
 
 The Webcrawler is separated from the Queue, so we can deploy any number of Cralwer Docker
 Containers and manage them with a Kubernetes Cluster. The Idea is to only run many Crawlers

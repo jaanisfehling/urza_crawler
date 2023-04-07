@@ -20,6 +20,7 @@ public class CrawlTask implements Callable<Boolean> {
     String listViewUrl;
     String articleSelector;
     String mostRecentArticleUrl;
+    String nextPageSelector;
     transient String siteName;
 
     private void updateMostRecentArticleUrl(String newMostRecentArticleUrl) {
@@ -55,23 +56,25 @@ public class CrawlTask implements Callable<Boolean> {
         }
     }
 
-    private boolean scrapeArticle(String url, String referrerUrl) {
+    private void scrapeArticle(String url, String referrerUrl) {
         Document articleDoc = request(url, referrerUrl);
         if (articleDoc == null) {
-            return false;
+            return;
         }
+
         String htmlContent = articleDoc.select("*").html();
         CrawlResult result = new CrawlResult(url, siteName, htmlContent);
 
         Gson gson = new Gson();
         String json = gson.toJson(result);
         Main.pipelineClient.send(json);
-        return true;
     }
 
-    @Override
-    public Boolean call() {
-        Document listViewDoc = request(listViewUrl, "www.google.com");
+    private String crawlPage(String url, String referrerUrl) {
+        Document listViewDoc = request(url, referrerUrl);
+        if (listViewDoc == null) {
+            return null;
+        }
 
         // Get the Name of the List View Site
         Element title = listViewDoc.select("title").first();
@@ -85,18 +88,28 @@ public class CrawlTask implements Callable<Boolean> {
 
             // If current Headline matches most recent article, we cancel
             if (articleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
-                return true;
+                return null;
             }
             else {
                 if (isFirstArticle) {
                     updateMostRecentArticleUrl(articleUrl);
                     isFirstArticle = false;
                 }
-                boolean result = scrapeArticle(articleUrl, listViewUrl);
-                // TODO: rotate proxies
+                scrapeArticle(articleUrl, listViewUrl);
             }
         }
-        return true;
+        return listViewDoc.select(nextPageSelector).attr("href");
+    }
+
+    @Override
+    public Boolean call() {
+        String nextPageUrl = listViewUrl;
+        String previousListViewUrl = "www.google.com";
+        do {
+            nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl);
+            previousListViewUrl = nextPageUrl; // TODO: Set previous Url cleverly
+        } while(nextPageUrl != null);
+        return null;
     }
 
     @Override
