@@ -13,9 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
 
-import static urza_crawler.UrlUtils.getAbsoluteUrl;
-import static urza_crawler.UrlUtils.getBaseUrl;
-
 public class CrawlTask implements Callable<Boolean> {
     String listViewUrl;
     String articleSelector;
@@ -31,10 +28,10 @@ public class CrawlTask implements Callable<Boolean> {
                 stmt.setString(2, listViewUrl);
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                System.out.println("Exception: " + e.getMessage());
+                System.out.println("SQL Exception: " + e.getMessage());
             }
         } catch (SQLException e) {
-            System.out.println("Exception: " + e.getMessage());
+            System.out.println("SQL Exception: " + e.getMessage());
         }
     }
 
@@ -51,7 +48,7 @@ public class CrawlTask implements Callable<Boolean> {
                     .get();
             return doc;
         } catch (IOException e) {
-            System.out.println("Exception: " + e.getMessage());
+            System.out.println("IO Exception: " + e.getMessage());
             return null;
         }
     }
@@ -70,7 +67,8 @@ public class CrawlTask implements Callable<Boolean> {
         Main.pipelineClient.send(json);
     }
 
-    private String crawlPage(String url, String referrerUrl) {
+    private String crawlPage(String url, String referrerUrl, boolean isFirstPage) {
+
         Document listViewDoc = request(url, referrerUrl);
         if (listViewDoc == null) {
             return null;
@@ -82,33 +80,36 @@ public class CrawlTask implements Callable<Boolean> {
 
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
-        boolean isFirstArticle = true;
+        boolean isFirstArticle = isFirstPage;
         for (Element headline : headlines) {
-            String articleUrl = getAbsoluteUrl(getBaseUrl(listViewUrl), headline.attr("href"));
+            String absArticleUrl = headline.attr("abs:href");
 
             // If current Headline matches most recent article, we cancel
-            if (articleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
+            if (absArticleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
                 return null;
             }
             else {
                 if (isFirstArticle) {
-                    updateMostRecentArticleUrl(articleUrl);
+                    updateMostRecentArticleUrl(absArticleUrl);
                     isFirstArticle = false;
                 }
-                scrapeArticle(articleUrl, listViewUrl);
+                scrapeArticle(absArticleUrl, listViewUrl);
             }
         }
-        return listViewDoc.select(nextPageSelector).attr("href");
+        return listViewDoc.select(nextPageSelector).first().attr("abs:href");
     }
 
     @Override
     public Boolean call() {
-        String nextPageUrl = listViewUrl;
-        String previousListViewUrl = "www.google.com";
-        do {
-            nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl);
-            previousListViewUrl = nextPageUrl; // TODO: Set previous Url cleverly
-        } while(nextPageUrl != null);
+        String nextPageUrl = crawlPage(listViewUrl, "www.google.com", true);
+        String previousListViewUrl = listViewUrl;
+        String currentPageUrl;
+
+        while(nextPageUrl != null) {
+            currentPageUrl = nextPageUrl;
+            nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl, false);
+            previousListViewUrl = currentPageUrl;
+        }
         return null;
     }
 
