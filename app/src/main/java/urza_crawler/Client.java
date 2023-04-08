@@ -10,6 +10,8 @@ import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
+import static urza_crawler.Main.queueUri;
+
 public class Client extends WebSocketClient {
 
     public Client(URI serverURI) {
@@ -19,12 +21,22 @@ public class Client extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         System.out.println("New connection opened");
-        send("");
+        if (uri.equals(queueUri)) {
+            send("");
+        }
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("Connection closed with exit code " + code + " Additional info: " + reason);
+        while (true) {
+            try {
+                if (!reconnectBlocking()) break;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     @Override

@@ -8,18 +8,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static ExecutorService pool = Executors.newFixedThreadPool(4);
+    public static URI pipelineUri;
+    public static URI queueUri;
     public static WebSocketClient pipelineClient;
     public static WebSocketClient queueClient;
+    public static ExecutorService pool = Executors.newFixedThreadPool(4);
 
     public static void main(String[] args) throws URISyntaxException {
         System.out.println("Running on JVM version " + System.getProperty("java.version"));
         System.out.println("Number of Available Processors: " + Runtime.getRuntime().availableProcessors());
 
-        pipelineClient = new Client(new URI("ws://localhost:8888"));
+        pipelineUri = new URI("ws://localhost:8888");
+        pipelineClient = new Client(pipelineUri);
         pipelineClient.connect();
 
-        queueClient = new Client(new URI("ws://localhost:8887"));
+        queueUri = new URI("ws://localhost:8887");
+        queueClient = new Client(queueUri);
         queueClient.connect();
     }
 }
