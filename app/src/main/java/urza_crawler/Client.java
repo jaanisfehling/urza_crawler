@@ -3,8 +3,7 @@ package urza_crawler;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
@@ -13,9 +12,11 @@ import org.java_websocket.handshake.ServerHandshake;
 import static urza_crawler.Main.queueUri;
 
 public class Client extends WebSocketClient {
+    ScheduledExecutorService executorService;
 
     public Client(URI serverURI) {
         super(serverURI);
+        executorService = Executors.newSingleThreadScheduledExecutor();
     }
 
     @Override
@@ -29,14 +30,7 @@ public class Client extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("Connection closed with exit code " + code + " Additional info: " + reason);
-        while (true) {
-            try {
-                if (!reconnectBlocking()) break;
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        executorService.schedule(new Reconnect(this), 5, TimeUnit.SECONDS);
     }
 
     @Override
