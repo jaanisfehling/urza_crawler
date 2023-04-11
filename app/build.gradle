@@ -47,3 +47,13 @@ java {
         languageVersion.set(JavaLanguageVersion.of(19))
     }
 }
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'urza_crawler.Main'
+        )
+    }
+}
+
+//archivesBaseName = 'app'

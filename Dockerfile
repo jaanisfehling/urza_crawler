@@ -1,27 +1,23 @@
-FROM openjdk:19-jdk-slim
+ARG BUILD_HOME=/urza_crawler
 
-WORKDIR /app
+FROM gradle:8.0.2-jdk19-alpine AS build-image
 
-# Copy the Gradle files to the container
-COPY app/build.gradle .
-COPY settings.gradle .
+ARG BUILD_HOME
+ENV APP_HOME=$BUILD_HOME
 
-# Copy the application source code to the container
+WORKDIR $APP_HOME
 
-# Install Gradle
-RUN apt-get update && \
-    apt-get install -y curl unzip && \
-    curl -L https://services.gradle.org/distributions/gradle-8.0.2-bin.zip && \
-    unzip -d /gradle gradle-8.0.2-bin.zip && \
-    rm gradle-7.1-bin.zip
+COPY --chown=gradle:gradle app/build.gradle settings.gradle $APP_HOME/
+COPY --chown=gradle:gradle app/src $APP_HOME/src
 
-ENV GRADLE_HOME=app/gradle/gradle-8.0.2
-ENV PATH=$PATH:$GRADLE_HOME/bin
-
-COPY src/ ./scr/
+RUN gradle build --no-daemon
 
 
-# Build the application using Gradle
-RUN gradle build
-# Set the command to run the application
-CMD ["java", "-jar", "./build/libs/urza_crawler.jar"]
+FROM amazoncorretto:19.0.2-alpine3.17
+
+ARG BUILD_HOME
+ENV APP_HOME=$BUILD_HOME
+
+COPY --from=build-image $APP_HOME/build/libs/*.jar app/
+
+CMD java -jar app/app.jar
