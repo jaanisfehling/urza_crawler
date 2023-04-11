@@ -4,11 +4,13 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
+import static urza_crawler.Main.logger;
 import static urza_crawler.Main.queueUri;
 
 public class Client extends WebSocketClient {
@@ -21,7 +23,7 @@ public class Client extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        System.out.println("New connection opened");
+        logger.log(Level.INFO, "New connection opened");
         if (uri.equals(queueUri)) {
             send("");
         }
@@ -29,13 +31,13 @@ public class Client extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        System.out.println("Connection closed with exit code " + code + " Additional info: " + reason);
+        logger.log(Level.INFO, "Connection closed with exit code " + code + " Additional info: " + reason);
         executorService.schedule(new Reconnect(this), 5, TimeUnit.SECONDS);
     }
 
     @Override
     public void onMessage(String message) {
-        System.out.println("Received message: " + message);
+        logger.log(Level.INFO, "Received Crawl Task: " + message);
 
         Gson gson = new Gson();
         List<Callable<Boolean>> crawlTasks = Arrays.asList(gson.fromJson(message, CrawlTask[].class));
@@ -49,7 +51,7 @@ public class Client extends WebSocketClient {
     }
 
     @Override
-    public void onError(Exception ex) {
-        System.err.println("An error occurred:" + ex);
+    public void onError(Exception e) {
+        logger.log(Level.SEVERE, "Websocket Exception: " + e.getMessage());
     }
 }

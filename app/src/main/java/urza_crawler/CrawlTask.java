@@ -12,6 +12,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
+
+import static urza_crawler.Main.logger;
 
 public class CrawlTask implements Callable<Boolean> {
     String listViewUrl;
@@ -28,17 +31,17 @@ public class CrawlTask implements Callable<Boolean> {
                 stmt.setString(2, listViewUrl);
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                System.out.println("SQL Exception: " + e.getMessage());
+                logger.log(Level.SEVERE, "SQL Exception: " + e.getMessage());
             }
         } catch (SQLException e) {
-            System.out.println("SQL Exception: " + e.getMessage());
+            logger.log(Level.SEVERE, "SQL Exception: " + e.getMessage());
         }
     }
 
     private Document request(String url, String referrerUrl) {
 
         try {
-            Document doc = Jsoup.connect(url)
+            return Jsoup.connect(url)
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0")
                     .header("Accept-Language", "en-US,en;q=0.9")
                     .referrer(referrerUrl)
@@ -46,14 +49,14 @@ public class CrawlTask implements Callable<Boolean> {
                     .ignoreContentType(true)
                     .followRedirects(true)
                     .get();
-            return doc;
         } catch (IOException e) {
-            System.out.println("IO Exception: " + e.getMessage());
+            logger.log(Level.SEVERE, "IO Exception: " + e.getMessage());
             return null;
         }
     }
 
     private void scrapeArticle(String url, String referrerUrl) {
+        logger.log(Level.INFO, "Requesting " + url);
         Document articleDoc = request(url, referrerUrl);
         if (articleDoc == null) {
             return;
@@ -68,7 +71,6 @@ public class CrawlTask implements Callable<Boolean> {
     }
 
     private String crawlPage(String url, String referrerUrl, boolean isFirstPage) {
-
         Document listViewDoc = request(url, referrerUrl);
         if (listViewDoc == null) {
             return null;
@@ -80,6 +82,9 @@ public class CrawlTask implements Callable<Boolean> {
 
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
+        if (headlines.isEmpty()) {
+            logger.log(Level.SEVERE, "No headlines for " + url);
+        }
         boolean isFirstArticle = isFirstPage;
         for (Element headline : headlines) {
             String absArticleUrl = headline.attr("abs:href");
@@ -96,7 +101,8 @@ public class CrawlTask implements Callable<Boolean> {
                 scrapeArticle(absArticleUrl, listViewUrl);
             }
         }
-        return listViewDoc.select(nextPageSelector).first().attr("abs:href");
+        Element nextPage = listViewDoc.select(nextPageSelector).first();
+        return (nextPage == null) ? null : nextPage.attr("abs:href");
     }
 
     @Override

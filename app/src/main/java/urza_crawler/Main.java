@@ -26,7 +26,6 @@ public class Main {
         } catch (SecurityException | IOException e) {
             throw new RuntimeException(e);
         }
-        logger.setLevel(Level.FINE);
 
         logger.log(Level.CONFIG, "Running on JVM version " + System.getProperty("java.version"));
         logger.log(Level.CONFIG, "Number of Available Processors: " + Runtime.getRuntime().availableProcessors());
