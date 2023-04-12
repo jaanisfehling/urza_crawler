@@ -1,23 +1,21 @@
-ARG BUILD_HOME=/urza_crawler
-
 FROM gradle:8.0.2-jdk19-alpine AS build-image
 
-ARG BUILD_HOME
-ENV APP_HOME=$BUILD_HOME
+WORKDIR /gradle-build
 
-WORKDIR $APP_HOME
-
-COPY --chown=gradle:gradle app/build.gradle settings.gradle $APP_HOME/
-COPY --chown=gradle:gradle app/src $APP_HOME/src
+COPY --chown=gradle:gradle app/build.gradle settings.gradle app/logging.properties /gradle-build/
+COPY --chown=gradle:gradle app/src /gradle-build/src
 
 RUN gradle build --no-daemon
 
 
 FROM amazoncorretto:19.0.2-alpine3.17
 
-ARG BUILD_HOME
-ENV APP_HOME=$BUILD_HOME
+COPY --from=build-image /gradle-build/build/distributions/urza_crawler.tar /app/
 
-COPY --from=build-image $APP_HOME/build/libs/*.jar app/
+WORKDIR /app
+RUN tar -xvf urza_crawler.tar
 
-CMD java -jar app/app.jar
+WORKDIR /app/urza_crawler
+COPY --from=build-image /gradle-build/logging.properties /app/urza_crawler
+
+CMD bin/urza_crawler
