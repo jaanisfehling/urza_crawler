@@ -30,11 +30,11 @@ public class Main {
         logger.log(Level.CONFIG, "Running on JVM version " + System.getProperty("java.version"));
         logger.log(Level.CONFIG, "Number of Available Processors: " + Runtime.getRuntime().availableProcessors());
 
-        pipelineUri = new URI("ws://localhost:8888");
+        pipelineUri = new URI("ws://172.17.0.1:9000");
         pipelineClient = new Client(pipelineUri);
         pipelineClient.connect();
 
-        queueUri = new URI("ws://localhost:8887");
+        queueUri = new URI("ws://172.17.0.1:10000");
         queueClient = new Client(queueUri);
         queueClient.connect();
     }
