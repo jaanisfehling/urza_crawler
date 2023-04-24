@@ -21,7 +21,8 @@ public class CrawlTask implements Callable<Boolean> {
     String articleSelector;
     String mostRecentArticleUrl;
     String nextPageSelector;
-    transient String siteName;
+    boolean oldArticlesScraped;
+    int maxPageDepth;
 
     private void updateMostRecentArticleUrl(String newMostRecentArticleUrl) {
         String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
@@ -55,7 +56,7 @@ public class CrawlTask implements Callable<Boolean> {
         }
     }
 
-    private void scrapeArticle(String url, String referrerUrl) {
+    private void scrapeArticle(String url, String referrerUrl, boolean isNew) {
         logger.log(Level.INFO, "Requesting " + url);
         Document articleDoc = request(url, referrerUrl);
         if (articleDoc == null) {
@@ -63,7 +64,7 @@ public class CrawlTask implements Callable<Boolean> {
         }
 
         String htmlContent = articleDoc.select("*").html();
-        CrawlResult result = new CrawlResult(url, siteName, htmlContent);
+        CrawlResult result = new CrawlResult(url, htmlContent, isNew);
 
         Gson gson = new Gson();
         String json = gson.toJson(result);
@@ -75,10 +76,6 @@ public class CrawlTask implements Callable<Boolean> {
         if (listViewDoc == null) {
             return null;
         }
-
-        // Get the Name of the List View Site
-        Element title = listViewDoc.select("title").first();
-        siteName = (title == null) ? null : title.text();
 
         // Iterate over all headlines
         Elements headlines = listViewDoc.select(articleSelector);
@@ -98,7 +95,7 @@ public class CrawlTask implements Callable<Boolean> {
                     updateMostRecentArticleUrl(absArticleUrl);
                     isFirstArticle = false;
                 }
-                scrapeArticle(absArticleUrl, listViewUrl);
+                scrapeArticle(absArticleUrl, listViewUrl, oldArticlesScraped);
             }
         }
         Element nextPage = listViewDoc.select(nextPageSelector).first();
@@ -110,11 +107,13 @@ public class CrawlTask implements Callable<Boolean> {
         String nextPageUrl = crawlPage(listViewUrl, "www.google.com", true);
         String previousListViewUrl = listViewUrl;
         String currentPageUrl;
+        int pageIndex = 1;
 
-        while(nextPageUrl != null) {
+        while(nextPageUrl != null && pageIndex <= maxPageDepth) {
             currentPageUrl = nextPageUrl;
             nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl, false);
             previousListViewUrl = currentPageUrl;
+            pageIndex++;
         }
         return null;
     }
