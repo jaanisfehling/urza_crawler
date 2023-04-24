@@ -16,7 +16,7 @@ import java.util.logging.Level;
 
 import static urza_crawler.Main.logger;
 
-public class CrawlTask implements Callable<Boolean> {
+public class CrawlTask implements Callable<CrawlTask> {
     String listViewUrl;
     String articleSelector;
     String mostRecentArticleUrl;
@@ -24,11 +24,11 @@ public class CrawlTask implements Callable<Boolean> {
     boolean oldArticlesScraped;
     int maxPageDepth;
 
-    private void updateMostRecentArticleUrl(String newMostRecentArticleUrl) {
-        String query = "UPDATE \"target\" SET most_recent_article_url=? WHERE list_view_url=?";
+    private void updateMostRecentArticleUrl() {
+        String query = "UPDATE target SET most_recent_article_url=? WHERE list_view_url=?";
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword")) {
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setString(1, newMostRecentArticleUrl);
+                stmt.setString(1, mostRecentArticleUrl);
                 stmt.setString(2, listViewUrl);
                 stmt.executeUpdate();
             } catch (SQLException e) {
@@ -92,7 +92,8 @@ public class CrawlTask implements Callable<Boolean> {
             }
             else {
                 if (isFirstArticle) {
-                    updateMostRecentArticleUrl(absArticleUrl);
+                    mostRecentArticleUrl = absArticleUrl;
+                    updateMostRecentArticleUrl();
                     isFirstArticle = false;
                 }
                 scrapeArticle(absArticleUrl, listViewUrl, oldArticlesScraped);
@@ -103,7 +104,7 @@ public class CrawlTask implements Callable<Boolean> {
     }
 
     @Override
-    public Boolean call() {
+    public CrawlTask call() {
         String nextPageUrl = crawlPage(listViewUrl, "www.google.com", true);
         String previousListViewUrl = listViewUrl;
         String currentPageUrl;
@@ -115,7 +116,8 @@ public class CrawlTask implements Callable<Boolean> {
             previousListViewUrl = currentPageUrl;
             pageIndex++;
         }
-        return null;
+        oldArticlesScraped = true;
+        return this;
     }
 
     @Override

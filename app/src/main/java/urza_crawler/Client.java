@@ -40,14 +40,15 @@ public class Client extends WebSocketClient {
         logger.log(Level.INFO, "Received Crawl Task: " + message);
 
         Gson gson = new Gson();
-        List<Callable<Boolean>> crawlTasks = Arrays.asList(gson.fromJson(message, CrawlTask[].class));
+        List<Callable<CrawlTask>> crawlTasks = Arrays.asList(gson.fromJson(message, CrawlTask[].class));
 
+        List<Future<CrawlTask>> updatedCrawlTasks;
         try {
-            List<Future<Boolean>> futures = Main.pool.invokeAll(crawlTasks);
+            updatedCrawlTasks = Main.pool.invokeAll(crawlTasks);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        send("");
+        send(gson.toJson(updatedCrawlTasks));
     }
 
     @Override
