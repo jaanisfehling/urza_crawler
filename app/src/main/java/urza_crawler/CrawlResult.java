@@ -2,12 +2,12 @@ package urza_crawler;
 
 public class CrawlResult {
     public String url;
-    public String htmlContent;
+    public String html;
     public boolean isNew;
 
-    public CrawlResult(String url, String htmlContent, boolean isNew) {
+    public CrawlResult(String url, String html, boolean isNew) {
         this.url = url;
-        this.htmlContent = htmlContent;
+        this.html = html;
         this.isNew = isNew;
     }
 

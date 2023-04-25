@@ -25,7 +25,7 @@ public class Client extends WebSocketClient {
     public void onOpen(ServerHandshake handshakedata) {
         logger.log(Level.INFO, "New connection opened");
         if (uri.equals(queueUri)) {
-            send("");
+            send("INTEREST");
         }
     }
 
@@ -48,7 +48,8 @@ public class Client extends WebSocketClient {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        send(gson.toJson(updatedCrawlTasks));
+        logger.log(Level.INFO, "Requesting new Crawl Tasks from Queue");
+        send("INTEREST");
     }
 
     @Override

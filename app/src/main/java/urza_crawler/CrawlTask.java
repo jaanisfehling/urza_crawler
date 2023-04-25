@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
-import static urza_crawler.Main.logger;
+import static urza_crawler.Main.*;
 
 public class CrawlTask implements Callable<CrawlTask> {
     String listViewUrl;
@@ -24,12 +24,18 @@ public class CrawlTask implements Callable<CrawlTask> {
     boolean oldArticlesScraped;
     int maxPageDepth;
 
-    private void updateMostRecentArticleUrl() {
-        String query = "UPDATE target SET most_recent_article_url=? WHERE list_view_url=?";
+    private void updateCrawlTask() {
+        oldArticlesScraped = true;
+        logger.log(Level.INFO, "Sending back updated Crawl Task");
+        Gson gson = new Gson();
+        queueClient.send(gson.toJson(this));
+
+        String query = "UPDATE target SET most_recent_article_url=?, old_articles_scraped=? WHERE list_view_url=?";
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword")) {
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
                 stmt.setString(1, mostRecentArticleUrl);
-                stmt.setString(2, listViewUrl);
+                stmt.setBoolean(2, oldArticlesScraped);
+                stmt.setString(3, listViewUrl);
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 logger.log(Level.SEVERE, "SQL Exception: " + e.getMessage());
@@ -63,8 +69,8 @@ public class CrawlTask implements Callable<CrawlTask> {
             return;
         }
 
-        String htmlContent = articleDoc.select("*").html();
-        CrawlResult result = new CrawlResult(url, htmlContent, isNew);
+        String html = articleDoc.select("*").html();
+        CrawlResult result = new CrawlResult(url, html, isNew);
 
         Gson gson = new Gson();
         String json = gson.toJson(result);
@@ -93,7 +99,7 @@ public class CrawlTask implements Callable<CrawlTask> {
             else {
                 if (isFirstArticle) {
                     mostRecentArticleUrl = absArticleUrl;
-                    updateMostRecentArticleUrl();
+                    updateCrawlTask();
                     isFirstArticle = false;
                 }
                 scrapeArticle(absArticleUrl, listViewUrl, oldArticlesScraped);
@@ -116,7 +122,6 @@ public class CrawlTask implements Callable<CrawlTask> {
             previousListViewUrl = currentPageUrl;
             pageIndex++;
         }
-        oldArticlesScraped = true;
         return this;
     }
 
