@@ -5,15 +5,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.gson.Gson;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
-import static urza_crawler.Main.logger;
 import static urza_crawler.Main.queueUri;
 
 public class Client extends WebSocketClient {
+    Logger logger = Logger.getLogger("");
     ScheduledExecutorService executorService;
 
     public Client(URI serverURI) {
@@ -32,7 +33,7 @@ public class Client extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean remote) {
         logger.log(Level.INFO, "Connection closed with exit code " + code + " Additional info: " + reason);
-        executorService.schedule(new Reconnect(this), 5, TimeUnit.SECONDS);
+        executorService.schedule(this::reconnect, 5, TimeUnit.SECONDS);
     }
 
     @Override

@@ -13,10 +13,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static urza_crawler.Main.*;
+import static urza_crawler.Main.queueClient;
+
 
 public class CrawlTask implements Callable<CrawlTask> {
+    transient Logger logger = Logger.getLogger("");
     String listViewUrl;
     String articleSelector;
     String mostRecentArticleUrl;
