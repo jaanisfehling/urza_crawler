@@ -15,6 +15,7 @@ import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static urza_crawler.Main.pipelineClient;
 import static urza_crawler.Main.queueClient;
 
 
@@ -24,8 +25,17 @@ public class CrawlTask implements Callable<CrawlTask> {
     String articleSelector;
     String mostRecentArticleUrl;
     String nextPageSelector;
-    boolean oldArticlesScraped;
-    int maxPageDepth;
+    Boolean oldArticlesScraped;
+    Integer maxPageDepth;
+
+    public CrawlTask(String listViewUrl, String articleSelector, String mostRecentArticleUrl, String nextPageSelector, Boolean oldArticlesScraped, Integer maxPageDepth) {
+        this.listViewUrl = listViewUrl;
+        this.articleSelector = articleSelector;
+        this.mostRecentArticleUrl = mostRecentArticleUrl;
+        this.nextPageSelector = nextPageSelector;
+        this.oldArticlesScraped = oldArticlesScraped;
+        this.maxPageDepth = maxPageDepth;
+    }
 
     private void updateCrawlTask() {
         oldArticlesScraped = true;
@@ -52,11 +62,16 @@ public class CrawlTask implements Callable<CrawlTask> {
 
         try {
             return Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0")
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Accept-Language", "en-US;q=0.7,en;q=0.3")
+                    .header("Connection", "keep-alive")
                     .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0")
                     .referrer(referrerUrl)
                     .timeout(3000)
-                    .ignoreContentType(true)
                     .followRedirects(true)
                     .get();
         } catch (IOException e) {
@@ -77,7 +92,7 @@ public class CrawlTask implements Callable<CrawlTask> {
 
         Gson gson = new Gson();
         String json = gson.toJson(result);
-        Main.pipelineClient.send(json);
+        pipelineClient.send(json);
     }
 
     private String crawlPage(String url, String referrerUrl, boolean isFirstPage) {
