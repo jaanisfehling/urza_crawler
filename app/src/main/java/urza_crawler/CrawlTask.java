@@ -1,16 +1,13 @@
 package urza_crawler;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.net.URL;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,34 +39,23 @@ public class CrawlTask implements Callable<CrawlTask> {
         logger.log(Level.INFO, "Sending back updated Crawl Task");
         Gson gson = new Gson();
         queueClient.send(gson.toJson(this));
-
-        String query = "UPDATE target SET most_recent_article_url=?, old_articles_scraped=? WHERE list_view_url=?";
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:32768/", "postgres", "mysecretpassword")) {
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setString(1, mostRecentArticleUrl);
-                stmt.setBoolean(2, oldArticlesScraped);
-                stmt.setString(3, listViewUrl);
-                stmt.executeUpdate();
-            } catch (SQLException e) {
-                logger.log(Level.SEVERE, "SQL Exception: " + e.getMessage());
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "SQL Exception: " + e.getMessage());
-        }
     }
 
     private Document request(String url, String referrerUrl) {
-
         try {
             return Jsoup.connect(url)
                     .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
                     .header("Accept-Encoding", "gzip, deflate, br")
                     .header("Accept-Language", "en-US;q=0.7,en;q=0.3")
                     .header("Connection", "keep-alive")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:111.0) Gecko/20100101 Firefox/111.0")
+                    .header("Host", new URL(url).getHost().replace("www.", ""))
+                    .header("Sec-Fetch-Dest", "document")
+                    .header("Sec-Fetch-Mode", "navigate")
+                    .header("Sec-Fetch-Site", "none")
+                    .header("Sec-Fetch-User", "?1")
+                    .header("TE", "trailers")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0")
                     .referrer(referrerUrl)
                     .timeout(3000)
                     .followRedirects(true)
@@ -113,8 +99,7 @@ public class CrawlTask implements Callable<CrawlTask> {
             // If current Headline matches most recent article, we cancel
             if (absArticleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
                 return null;
-            }
-            else {
+            } else {
                 if (isFirstArticle) {
                     mostRecentArticleUrl = absArticleUrl;
                     updateCrawlTask();
@@ -134,7 +119,7 @@ public class CrawlTask implements Callable<CrawlTask> {
         String currentPageUrl;
         int pageIndex = 1;
 
-        while(nextPageUrl != null && pageIndex <= maxPageDepth) {
+        while (nextPageUrl != null && pageIndex <= maxPageDepth) {
             currentPageUrl = nextPageUrl;
             nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl, false);
             previousListViewUrl = currentPageUrl;
