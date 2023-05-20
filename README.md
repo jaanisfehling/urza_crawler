@@ -19,3 +19,7 @@ Brian Goetz magic formula:
 The Webcrawler is separated from the Queue, so we can deploy any number of Cralwer Docker
 Containers and manage them with a Kubernetes Cluster. The Idea is to only run many Crawlers
 when the exchange is actually open.
+
+## TODO
+
+- multi page crawling currently not working
