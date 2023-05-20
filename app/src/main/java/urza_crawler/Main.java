@@ -13,7 +13,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class Main {
-    private static Logger logger = Logger.getLogger("");
+    public static Logger logger = Logger.getLogger("");
     public static URI pipelineUri;
     public static URI queueUri;
     public static WebSocketClient pipelineClient;

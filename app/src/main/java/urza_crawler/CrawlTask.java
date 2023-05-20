@@ -10,20 +10,19 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import static urza_crawler.Main.pipelineClient;
-import static urza_crawler.Main.queueClient;
+import static urza_crawler.Main.*;
 
 
 public class CrawlTask implements Callable<CrawlTask> {
-    transient Logger logger = Logger.getLogger("");
     String listViewUrl;
     String articleSelector;
     String mostRecentArticleUrl;
     String nextPageSelector;
     Boolean oldArticlesScraped;
     Integer maxPageDepth;
+
+    transient String oldMostRecentArticleUrl;
 
     public CrawlTask(String listViewUrl, String articleSelector, String mostRecentArticleUrl, String nextPageSelector, Boolean oldArticlesScraped, Integer maxPageDepth) {
         this.listViewUrl = listViewUrl;
@@ -41,14 +40,14 @@ public class CrawlTask implements Callable<CrawlTask> {
         queueClient.send(gson.toJson(this));
     }
 
-    private Document request(String url, String referrerUrl) {
+    public Document request(String url, String referrerUrl) {
         try {
             return Jsoup.connect(url)
                     .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Accept-Encoding", "identity")
                     .header("Accept-Language", "en-US;q=0.7,en;q=0.3")
                     .header("Connection", "keep-alive")
-                    .header("Host", new URL(url).getHost().replace("www.", ""))
+                    .header("Host", new URL(url).getHost())
                     .header("Sec-Fetch-Dest", "document")
                     .header("Sec-Fetch-Mode", "navigate")
                     .header("Sec-Fetch-Site", "none")
@@ -67,7 +66,7 @@ public class CrawlTask implements Callable<CrawlTask> {
     }
 
     private void scrapeArticle(String url, String referrerUrl, boolean isNew) {
-        logger.log(Level.INFO, "Requesting " + url);
+        logger.log(Level.FINE, "Requesting " + url);
         Document articleDoc = request(url, referrerUrl);
         if (articleDoc == null) {
             return;
@@ -84,6 +83,7 @@ public class CrawlTask implements Callable<CrawlTask> {
     private String crawlPage(String url, String referrerUrl, boolean isFirstPage) {
         Document listViewDoc = request(url, referrerUrl);
         if (listViewDoc == null) {
+            logger.log(Level.SEVERE, "Empty document for " + url);
             return null;
         }
 
@@ -91,13 +91,14 @@ public class CrawlTask implements Callable<CrawlTask> {
         Elements headlines = listViewDoc.select(articleSelector);
         if (headlines.isEmpty()) {
             logger.log(Level.SEVERE, "No headlines for " + url);
+            return null;
         }
         boolean isFirstArticle = isFirstPage;
         for (Element headline : headlines) {
             String absArticleUrl = headline.attr("abs:href");
 
             // If current Headline matches most recent article, we cancel
-            if (absArticleUrl.equals(mostRecentArticleUrl) || headline.attr("href").equals(mostRecentArticleUrl)) {
+            if (absArticleUrl.equals(oldMostRecentArticleUrl) || headline.attr("href").equals(oldMostRecentArticleUrl)) {
                 return null;
             } else {
                 if (isFirstArticle) {
@@ -105,15 +106,24 @@ public class CrawlTask implements Callable<CrawlTask> {
                     updateCrawlTask();
                     isFirstArticle = false;
                 }
+                logger.log(Level.INFO, "New article: " + absArticleUrl);
                 scrapeArticle(absArticleUrl, listViewUrl, oldArticlesScraped);
             }
         }
-        Element nextPage = listViewDoc.select(nextPageSelector).first();
-        return (nextPage == null) ? null : nextPage.attr("abs:href");
+        if (nextPageSelector != null) {
+            Element nextPage = listViewDoc.select(nextPageSelector).first();
+            if (nextPage == null) {
+                logger.log(Level.SEVERE, "No next page for " + url);
+                return null;
+            }
+            return nextPage.attr("abs:href");
+        }
+        return null;
     }
 
     @Override
     public CrawlTask call() {
+        oldMostRecentArticleUrl = mostRecentArticleUrl;
         String nextPageUrl = crawlPage(listViewUrl, "www.google.com", true);
         String previousListViewUrl = listViewUrl;
         String currentPageUrl;

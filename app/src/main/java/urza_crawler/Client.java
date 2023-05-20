@@ -1,20 +1,19 @@
 package urza_crawler;
 
+import com.google.gson.Gson;
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.handshake.ServerHandshake;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import com.google.gson.Gson;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
-
+import static urza_crawler.Main.logger;
 import static urza_crawler.Main.queueUri;
 
 public class Client extends WebSocketClient {
-    Logger logger = Logger.getLogger("");
     ScheduledExecutorService executorService;
 
     public Client(URI serverURI) {
@@ -43,9 +42,8 @@ public class Client extends WebSocketClient {
         Gson gson = new Gson();
         List<Callable<CrawlTask>> crawlTasks = Arrays.asList(gson.fromJson(message, CrawlTask[].class));
 
-        List<Future<CrawlTask>> updatedCrawlTasks;
         try {
-            updatedCrawlTasks = Main.pool.invokeAll(crawlTasks);
+            List<Future<CrawlTask>> updatedCrawlTasks = Main.pool.invokeAll(crawlTasks);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
