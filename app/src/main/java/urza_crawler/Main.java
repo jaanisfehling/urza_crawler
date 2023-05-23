@@ -27,8 +27,8 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        logger.log(Level.CONFIG, "Running on JVM version " + System.getProperty("java.version"));
-        logger.log(Level.CONFIG, "Number of Available Processors: " + Runtime.getRuntime().availableProcessors());
+        logger.log(Level.INFO, "Running on JVM version " + System.getProperty("java.version"));
+        logger.log(Level.INFO, "Number of Available Processors: " + Runtime.getRuntime().availableProcessors());
 
         pipelineUri = new URI("ws://localhost:9000");
         pipelineClient = new Client(pipelineUri);

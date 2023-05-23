@@ -129,7 +129,7 @@ public class CrawlTask implements Callable<CrawlTask> {
         String currentPageUrl;
         int pageIndex = 1;
 
-        while (nextPageUrl != null && pageIndex <= maxPageDepth) {
+        while (nextPageUrl != null && pageIndex < maxPageDepth) {
             currentPageUrl = nextPageUrl;
             nextPageUrl = crawlPage(nextPageUrl, previousListViewUrl, false);
             previousListViewUrl = currentPageUrl;
