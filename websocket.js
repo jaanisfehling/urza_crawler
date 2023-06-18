@@ -1,7 +1,10 @@
 import {WebSocket} from "ws";
+import CrawlTask from "./crawl_task";
 
 export function connect(url, headers, isQueue) {
-    const ws = new WebSocket(url, [], options);
+    const ws = new WebSocket(url, [], {
+        headers: headers
+    });
 
     ws.on("open", function() {
         console.log("New connection opened");
@@ -16,11 +19,7 @@ export function connect(url, headers, isQueue) {
         if (data && data !== "") {
             try {
                 for (const crawlTask of JSON.parse(data.toString())) {
-                    if (crawlTask.oldArticlesScraped) {
-
-                    } else {
-
-                    }
+                    let crawlTaskObj = new CrawlTask(...crawlTask);
                 }
 
             } catch (e) {
