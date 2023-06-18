@@ -1,4 +1,4 @@
-import {queue, server} from "./main";
+import {queue, server} from "./main.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { createRequire } from "module";
@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const {Worker} = require("worker_threads");
 
 export default class CrawlTask {
-    async constructor(listViewUrl, articleSelector, mostRecentArticleUrl, nextPageSelector, oldArticlesScraped, maxPageDepth) {
+    constructor(listViewUrl, articleSelector, mostRecentArticleUrl, nextPageSelector, oldArticlesScraped, maxPageDepth) {
         this.listViewUrl = listViewUrl;
         this.articleSelector = articleSelector;
         this.mostRecentArticleUrl = mostRecentArticleUrl;
@@ -15,7 +15,7 @@ export default class CrawlTask {
         this.maxPageDepth = maxPageDepth;
         this.oldMostRecentArticleUrl;
         this.baseUrl = new URL(listViewUrl).hostname;
-        await this.run();
+        this.run().then(r => {});
     }
 
     updateCrawlTask() {
