@@ -1,0 +1,22 @@
+{
+  "name": "urza_crawler",
+  "version": "1.0.0",
+  "description": "This is the primary Web Crawler for real time news/press release scraping.\r The Crawler will connect with the Queue and the Pipeline via websocket and \r will notify the Queue about its presence. The Queue will, when a batch of Crawl\r Tasks are due, send them to the Crawler. The Crawler will crawl through the list view\r site and look for new articles. If there are, it will send them to the pipeline.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/urza-news/urza_crawler.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/urza-news/urza_crawler/issues"
+  },
+  "homepage": "https://github.com/urza-news/urza_crawler#readme",
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
+}
