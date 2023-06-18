@@ -20,7 +20,7 @@ export default class CrawlTask {
 
     updateCrawlTask() {
         console.log("Sending back updated Crawl Task");
-        queue.send(JSON.stringify({
+        queue.connection.send(JSON.stringify({
             listViewUrl: this.listViewUrl,
             articleSelector: this.articleSelector,
             mostRecentArticleUrl: this.mostRecentArticleUrl,
@@ -73,7 +73,7 @@ export default class CrawlTask {
         worker.once("message", async article => {
             if (article !== null) {
                 console.log("Valid Article");
-                server.send(JSON.stringify(article));
+                server.connection.send(JSON.stringify(article));
             } else {
                 console.error("Invalid Article");
             }

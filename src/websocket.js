@@ -2,48 +2,64 @@ import {WebSocket} from "ws";
 import CrawlTask from "./crawl_task.js";
 
 export default class Websocket {
-    ws;
+    connection;
 
     constructor(url, headers, isQueue) {
-        connect(url, headers, isQueue);
+        this.connect(url, headers, isQueue);
     }
-}
-export function connect(url, headers, isQueue) {
-    this.ws = new WebSocket(url, [], {
-        headers: headers
-    });
 
-    this.ws.on("open", function() {
-        console.log("New connection opened");
-        if (isQueue) {
-            this.ws.send("INTEREST");
-        }
-    });
+    connect(url, headers, isQueue) {
+        this.connection = new WebSocket(url, [], {
+            headers: headers
+        });
 
-    this.ws.on("message", function message(data) {
-        console.log("Received Crawl Task: " + message);
-
-        if (data && data !== "") {
-            try {
-                for (const crawlTask of JSON.parse(data.toString())) {
-                    new CrawlTask(...crawlTask);
-                }
-
-            } catch (e) {
-                console.error("Error receiving Data:\n", e.message);
+        this.connection.on("open", () => {
+            console.log("New connection opened");
+            if (isQueue) {
+                this.connection.send("INTEREST");
             }
-        }
+        });
 
-        console.log("Requesting new Crawl Tasks from Queue");
-        this.ws.send("INTEREST");
-    });
+        this.connection.on("message", (data) => {
+            console.log("Received Crawl Task: " + data);
 
-    this.ws.on("close", function() {
-        console.error("Connection closed to main server. Reconnecting...");
-        setTimeout(connect, 5000, url, headers, isQueue);
-    });
+            if (data) {
+                try {
+                    for (const task of JSON.parse(data.toString())) {
+                        new CrawlTask(
+                            task.listViewUrl,
+                            task.articleSelector,
+                            task.mostRecentArticleUrl,
+                            task.nextPageSelector,
+                            task.oldArticlesScraped,
+                            task.maxPageDepth
+                        );
+                    }
 
-    this.ws.on("error", function() {
-        console.error("Error on main server websocket");
-    });
+                } catch (e) {
+                    console.error("Error receiving Data:\n", e.message);
+                }
+            }
+
+            console.log("Requesting new Crawl Tasks from Queue");
+            this.connection.send("INTEREST");
+        });
+
+        this.connection.on("close", () => {
+            if (isQueue) {
+                console.error("Connection closed to Queue. Reconnecting...");
+            } else {
+                console.error("Connection closed to main server. Reconnecting...");
+            }
+            setTimeout(() => {this.connect(url, headers, isQueue)}, 5000);
+        });
+
+        this.connection.on("error", (e) => {
+            if (isQueue) {
+                console.error("Error on Queue websocket: " + e.message);
+            } else {
+                console.error("Error on main server websocket: " + e.message);
+            }
+        });
+    }
 }
