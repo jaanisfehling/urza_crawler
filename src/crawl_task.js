@@ -1,7 +1,8 @@
 import {queue, server} from "./main.js";
 import axios from "axios";
-import * as cheerio from "cheerio";
+import {parseHTML} from "linkedom";
 import { createRequire } from "module";
+import * as path from "path";
 const require = createRequire(import.meta.url);
 const {Worker} = require("worker_threads");
 
@@ -14,7 +15,7 @@ export default class CrawlTask {
         this.oldArticlesScraped = oldArticlesScraped;
         this.maxPageDepth = maxPageDepth;
         this.oldMostRecentArticleUrl;
-        this.baseUrl = new URL(listViewUrl).hostname;
+        this.baseUrl = new URL(listViewUrl);
         this.run().then(r => {});
     }
 
@@ -38,7 +39,7 @@ export default class CrawlTask {
                     "Accept-Encoding": "identity",
                     "Accept-Language": "en-US;q=0.7,en;q=0.3",
                     "Connection": "keep-alive",
-                    "Host": this.baseUrl,
+                    "Host": this.baseUrl.hostname,
                     "Sec-Fetch-Dest": "document",
                     "Sec-Fetch-Mode": "navigate",
                     "Sec-Fetch-Site": "none",
@@ -64,7 +65,7 @@ export default class CrawlTask {
         }
         const article = {url: url, html: html, isNew: isNew}
 
-        const worker = new Worker("./parse.js", {
+        const worker = new Worker("./src/parse.js", {
             workerData: {
                 article: article
             }
@@ -86,22 +87,22 @@ export default class CrawlTask {
 
     async crawlPage(url, referer, isFirstPage) {
         const html = await this.request(url, referer);
-        const $ = cheerio.load(html);
-        if (html === null || $ === null) {
+        const {document} = parseHTML(html);
+        if (document === null) {
             console.error("Empty document for " + url);
             return null;
         }
 
         // Iterate over all headlines
-        const headlines = $(this.articleSelector);
+        const headlines = document.querySelectorAll(this.articleSelector);
         if (headlines === null) {
             console.log("No headlines for " + url);
             return null;
         }
         let isFirstArticle = isFirstPage;
         for (const headline of headlines) {
-            const relArticleUrl = $(headline).attr("href");
-            const absArticleUrl = new URL(relArticleUrl, this.baseUrl);
+            const relArticleUrl = headline.href;
+            const absArticleUrl = new URL(relArticleUrl, this.baseUrl.href).href;
 
             // If current Headline matches most recent article, we cancel
             if (absArticleUrl === this.oldMostRecentArticleUrl || relArticleUrl === this.oldMostRecentArticleUrl) {
@@ -117,26 +118,26 @@ export default class CrawlTask {
             }
         }
         if (this.nextPageSelector != null) {
-            const nextPage = $(this.nextPageSelector).first();
-            if (nextPage == null) {
+            const nextPage = document.querySelector(this.nextPageSelector);
+            if (nextPage === null) {
                 console.error("No next page for " + url);
                 return null;
             }
-            return nextPage.attr("abs:href");
+            return new URL(nextPage.href, this.baseUrl.href).href;
         }
         return null;
     }
 
     async run() {
         this.oldMostRecentArticleUrl = this.mostRecentArticleUrl;
-        let nextPageUrl = this.crawlPage(this.listViewUrl, "www.google.com", true);
+        let nextPageUrl = await this.crawlPage(this.listViewUrl, "www.google.com", true);
         let previousListViewUrl = this.listViewUrl;
         let currentPageUrl;
         let pageIndex = 1;
 
-        while (nextPageUrl != null && pageIndex < this.maxPageDepth) {
+        while (nextPageUrl !== null && pageIndex < this.maxPageDepth) {
             currentPageUrl = nextPageUrl;
-            nextPageUrl = this.crawlPage(nextPageUrl, previousListViewUrl, false);
+            nextPageUrl = await this.crawlPage(nextPageUrl, previousListViewUrl, false);
             previousListViewUrl = currentPageUrl;
             pageIndex++;
         }

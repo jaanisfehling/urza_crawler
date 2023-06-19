@@ -21,28 +21,29 @@ export default class Websocket {
         });
 
         this.connection.on("message", (data) => {
-            console.log("Received Crawl Task: " + data);
+            if (isQueue) {
+                console.log("Received Crawl Task: " + data);
+                if (data) {
+                    try {
+                        for (const task of JSON.parse(data.toString())) {
+                            new CrawlTask(
+                                task.listViewUrl,
+                                task.articleSelector,
+                                task.mostRecentArticleUrl,
+                                task.nextPageSelector,
+                                task.oldArticlesScraped,
+                                task.maxPageDepth
+                            );
+                        }
 
-            if (data) {
-                try {
-                    for (const task of JSON.parse(data.toString())) {
-                        new CrawlTask(
-                            task.listViewUrl,
-                            task.articleSelector,
-                            task.mostRecentArticleUrl,
-                            task.nextPageSelector,
-                            task.oldArticlesScraped,
-                            task.maxPageDepth
-                        );
+                    } catch (e) {
+                        console.error("Error receiving Data:\n", e.message);
                     }
-
-                } catch (e) {
-                    console.error("Error receiving Data:\n", e.message);
                 }
-            }
 
-            console.log("Requesting new Crawl Tasks from Queue");
-            this.connection.send("INTEREST");
+                console.log("Requesting new Crawl Tasks from Queue");
+                this.connection.send("INTEREST");
+            }
         });
 
         this.connection.on("close", () => {

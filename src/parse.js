@@ -11,7 +11,7 @@ const {isMainThread, parentPort, workerData} = require("worker_threads");
 
 
 export function worker(article) {
-    const {document} = parseHTML(article.html)
+    const {document} = parseHTML(article.html);
 
     if (!isProbablyReaderable(document)) {
         return null;
@@ -20,7 +20,7 @@ export function worker(article) {
     let reader = new Readability(document).parse();
 
     article.scraped_date_time = new Date().toISOString();
-    article.site_name = (reader.siteName != null) ? reader.siteName.substring(0, 255) : null;
+    article.site_name = (reader.siteName != null) ? reader.siteName.substring(0, 255) : new URL(article.url).hostname;
     article.title = reader.title.substring(0, 255);
     article.excerpt = reader.excerpt;
 
