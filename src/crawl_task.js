@@ -1,8 +1,8 @@
 import {queue, server} from "./main.js";
 import axios from "axios";
 import {parseHTML} from "linkedom";
-import { createRequire } from "module";
-import * as path from "path";
+import {createRequire} from "module";
+
 const require = createRequire(import.meta.url);
 const {Worker} = require("worker_threads");
 
@@ -16,7 +16,8 @@ export default class CrawlTask {
         this.maxPageDepth = maxPageDepth;
         this.oldMostRecentArticleUrl;
         this.baseUrl = new URL(listViewUrl);
-        this.run().then(r => {});
+        this.run().then(r => {
+        });
     }
 
     updateCrawlTask() {
@@ -51,7 +52,7 @@ export default class CrawlTask {
                 }
             });
             return response.data;
-        } catch(e) {
+        } catch (e) {
             console.error("Error fetching Url: " + url + "\n" + e.message);
         }
     }
