@@ -1,5 +1,6 @@
 import {WebSocket} from "ws";
 import CrawlTask from "./crawl_task.js";
+import crawl from "./crawl_task.js";
 
 export default class Websocket {
     connection;
@@ -20,20 +21,13 @@ export default class Websocket {
             }
         });
 
-        this.connection.on("message", (data) => {
+        this.connection.on("message", async (data) => {
             if (isQueue) {
                 console.log("Received Crawl Task: " + data);
                 if (data) {
                     try {
                         for (const task of JSON.parse(data.toString())) {
-                            new CrawlTask(
-                                task.listViewUrl,
-                                task.articleSelector,
-                                task.mostRecentArticleUrl,
-                                task.nextPageSelector,
-                                task.oldArticlesScraped,
-                                task.maxPageDepth
-                            );
+                            await crawl(task);
                         }
 
                     } catch (e) {
