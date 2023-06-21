@@ -1,5 +1,4 @@
 import {WebSocket} from "ws";
-import CrawlTask from "./crawl_task.js";
 import crawl from "./crawl_task.js";
 
 export default class Websocket {
