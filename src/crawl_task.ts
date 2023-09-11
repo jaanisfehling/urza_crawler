@@ -1,5 +1,5 @@
-import {queue, server} from "./main.js";
-import axios from "axios";
+import {apiToken, newArticleEndpoint, queue, scraperKey} from "./main.js";
+import axios, { AxiosError } from "axios";
 import {parseHTML} from "linkedom";
 import {createRequire} from "module";
 
@@ -60,8 +60,19 @@ export default async function crawl(task) {
                 }
             });
             return response.data;
-        } catch (e) {
-            console.error("Error fetching Url: " + url + "\n" + e.message);
+        } catch (e: unknown) {
+            const error = e as AxiosError;
+            if (error.response) {
+                if (error.response.data) {
+                    console.error(error.response.data);
+                } else {
+                    console.error("Bad request: " + url);
+                }
+            } else if (error.request) {
+                console.error("Cannot establish connection: " + url);
+            } else {
+                console.error("Client error: " + url);
+            }
         }
     }
 
@@ -82,9 +93,27 @@ export default async function crawl(task) {
         worker.once("message", async article => {
             if (article !== null) {
                 console.log("Valid Article");
-                server.connection.send(JSON.stringify(article));
+                try {
+                    await axios.post(newArticleEndpoint, JSON.stringify(article), {headers: {
+                        "Authorization": "APIToken " + apiToken,
+                        "Scraper-Key": scraperKey
+                    }});
+                } catch (e: unknown) {
+                    const error = e as AxiosError;
+                    if (error.response) {
+                        if (error.response.data) {
+                            console.error("(Django) " + error.response.data);
+                        } else {
+                            console.error("(Django) Bad request");
+                        }
+                    } else if (error.request) {
+                        console.error("(Django) Cannot establish connection");
+                    } else {
+                        console.error("(Django) Client error");
+                    }
+                }
             } else {
-                console.error("Invalid Article");
+                console.error("Invalid article");
             }
         });
 

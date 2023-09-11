@@ -1,0 +1,3 @@
+# Urza Crawler
+
+This is the primary Web Crawler for real time news/press release scraping. The Crawler will connect with the Queue and the Pipeline via websocket and  will notify the Queue about its presence. The Queue will, when a batch of Crawl Tasks are due, send them to the Crawler. The Crawler will crawl through the list view site and look for new articles. If there are, it will send them to Django.
