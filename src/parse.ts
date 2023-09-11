@@ -1,13 +1,10 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-
 import {isProbablyReaderable, Readability} from "@mozilla/readability";
 import DOMPurify from "dompurify";
 import {JSDOM} from "jsdom";
 import {parseHTML} from "linkedom";
 import { Buffer } from "node:buffer";
 import minifyHtml from "@minify-html/node";
-const {isMainThread, parentPort, workerData} = require("worker_threads");
+import {isMainThread, parentPort, workerData} from "worker_threads";
 
 
 export function worker(article) {
