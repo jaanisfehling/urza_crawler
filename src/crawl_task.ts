@@ -7,6 +7,7 @@ const require = createRequire(import.meta.url);
 const {Worker} = require("worker_threads");
 
 export default async function crawl(task) {
+    let ticker = task.ticker;
     let listViewUrl = task.listViewUrl;
     let articleSelector = task.articleSelector;
     let mostRecentArticleUrl = task?.mostRecentArticleUrl;
@@ -82,7 +83,7 @@ export default async function crawl(task) {
             console.error("Empty document for " + url);
             return;
         }
-        const article = {url: url, html: html, isNew: isNew}
+        const article = {url: url, ticker: ticker, html: html, isNew: isNew}
 
         const worker = new Worker("./src/parse.js", {
             workerData: {
@@ -96,7 +97,8 @@ export default async function crawl(task) {
                 try {
                     await axios.post(newArticleEndpoint, JSON.stringify(article), {headers: {
                         "Authorization": "APIToken " + apiToken,
-                        "Scraper-Key": scraperKey
+                        "Scraper-Key": scraperKey,
+                        "Content-Type": "application/json"
                     }});
                 } catch (e: unknown) {
                     const error = e as AxiosError;
