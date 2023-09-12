@@ -1,18 +1,21 @@
-FROM node:18-alpine3.17 as compile-image
+FROM node:18-slim as compile-image
 
-RUN npm i typescript
+ENV NODE_ENV=development
 
-COPY src/ .
+COPY . .
 
-RUN tsc main.ts
-RUN tsc parse.ts
+RUN npm ci
+RUN npm install -g typescript@5.2.2
+
+RUN tsc --skipLibCheck
 
 
-FROM node:18-alpine3.17
+FROM node:18-slim
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY --from=compile-image *.js .
+COPY --from=compile-image dist/main.js dist/crawl_task.js dist/websocket.js ./
+COPY src/parse.js src/parse.js
 
 CMD node main.js

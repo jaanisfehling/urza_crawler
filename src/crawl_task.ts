@@ -1,10 +1,7 @@
 import {apiToken, newArticleEndpoint, queue, scraperKey} from "./main.js";
 import axios, { AxiosError } from "axios";
 import {parseHTML} from "linkedom";
-import {createRequire} from "module";
-
-const require = createRequire(import.meta.url);
-const {Worker} = require("worker_threads");
+import {Worker} from "worker_threads";
 
 export default async function crawl(task) {
     let ticker = task.ticker;
